@@ -43,6 +43,7 @@ from ignite.engine import (
 from models.potnet import PotNet
 
 import random
+import wandb
 
 plt.switch_backend("agg")
 
@@ -115,6 +116,9 @@ def train_pyg(
         train_val_test_loaders=None,
 ):
     print(config)
+    wandb.init(project=config["model"]["name"], 
+        sync_tensorboard=True)
+    
     config = TrainingConfig(**config)
     if not os.path.exists(config.output_dir):
         os.makedirs(config.output_dir)
@@ -122,6 +126,7 @@ def train_pyg(
     deterministic = False
     print("config:")
     tmp = config.dict()
+    wandb.config.update(tmp)
     f = open(os.path.join(config.output_dir, "config.json"), "w")
     f.write(json.dumps(tmp, indent=4))
     f.close()
@@ -418,7 +423,12 @@ def train_pyg(
 
     if config.log_tensorboard:
         test_loss = evaluator.state.metrics["loss"]
-        tb_logger.writer.add_hparams(config, {"hparam/test_loss": test_loss})
+        test_mae = evaluator.state.metrics["mae"]
+        test_neg_mae = evaluator.state.metrics["neg_mae"]
+        # tb_logger.writer.add_hparams(config, {"hparam/test_loss": test_loss})
+        tb_logger.writer.add_scalar("test/loss",test_loss)
+        tb_logger.writer.add_scalar("test/mae",test_mae)
+        tb_logger.writer.add_scalar("test/neg_mae",test_neg_mae)
         tb_logger.close()
 
     print("Testing!")
@@ -470,10 +480,10 @@ def train_pyg(
 def train_prop_model(config: Dict, data_root: str = None, checkpoint: str = None, testing: bool = False, file_format: str = 'poscar'):
     if config["dataset"] == "megnet":
         config["id_tag"] = "id"
-        if config["target"] == "e_form" or config["target"] == "gap pbe":
-            config["n_train"] = 60000
-            config["n_val"] = 5000
-            config["n_test"] = 4239
+        # if config["target"] == "e_form" or config["target"] == "gap pbe":
+        #     config["n_train"] = 60000
+        #     config["n_val"] = 5000
+        #     config["n_test"] = 4239
 
     result = train_pyg(config, data_root=data_root, file_format=file_format, checkpoint=checkpoint, testing=testing)
     return result
