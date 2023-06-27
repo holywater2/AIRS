@@ -9,7 +9,7 @@ To run the summation algorithm, please run below commands in order to install th
 cd functions
 tar xzvf gsl-latest.tar.gz
 cd gsl-2.7.1
-./configure --prefix=TARGET PATH
+./configure --prefix=$CONDA_PREFIX
 make
 make install
 ```
@@ -17,7 +17,7 @@ make install
 Then edit `~/.bashrc` by adding
 
 ```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:TARGET PATH/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib/
 ```
 
 Now we back to `functions` directory and run

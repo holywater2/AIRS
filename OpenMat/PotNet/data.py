@@ -27,12 +27,13 @@ from pandarallel import pandarallel
 import periodictable
 import algorithm
 
-pandarallel.initialize(progress_bar=True)
+num_workers=8
+pandarallel.initialize(progress_bar=True, nb_workers=num_workers)
 
 tqdm.pandas()
 
 torch.set_printoptions(precision=10)
-
+torch.set_num_threads(num_workers)
 
 def find_index_array(A, B):
     _, n = B.shape
@@ -291,7 +292,8 @@ def load_radius_graphs(
     if cachefile is not None and cachefile.is_file():
         pass
     else:
-        graphs = df["atoms"].parallel_apply(atoms_to_graph).values
+        graphs = df["atoms"].progress_apply(atoms_to_graph).values
+        # graphs = df["atoms"].parallel_apply(atoms_to_graph).values
         torch.save(graphs, cachefile)
 
 
@@ -346,6 +348,7 @@ def load_infinite_graphs(
     if cachefile is not None and cachefile.is_file():
         pass
     else:
+        # graphs = df["atoms"].progress_apply(atoms_to_graph).values
         graphs = df["atoms"].parallel_apply(atoms_to_graph).values
         torch.save(graphs, cachefile)
 
@@ -630,6 +633,7 @@ def get_train_val_loaders(
 
     print("------processing time------: " + str(time.time() - start))
 
+    # print(train_data)
     # use a regular pytorch dataloader
     train_loader = DataLoader(
         train_data,

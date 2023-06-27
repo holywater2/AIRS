@@ -2,3 +2,7 @@
 .DS_Store
 /OpenMat/PotNet/functions/gsl-2.7.1
 /OpenMat/PotNet/functions/series.c
+/OpenMat/PotNet/outputs/*
+__pycache__
+/OpenMat/PotNet/functions
+wandb

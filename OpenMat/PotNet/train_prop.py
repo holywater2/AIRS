@@ -41,6 +41,8 @@ from ignite.engine import (
     create_supervised_trainer,
 )
 from models.potnet import PotNet
+from models.potnet_no_inf import PotNet_no_inf
+
 
 import random
 import wandb
@@ -247,8 +249,12 @@ def train_pyg(
     # define network, optimizer, scheduler
     _model = {
         "potnet": PotNet,
+        "potnet_no_inf": PotNet_no_inf
     }
-    net = _model.get(config.model.name)(config.model)
+    if not config.euclidean:
+        net = _model.get(config.model.name)(config.model)
+    else:
+        net = PotNet_no_inf(config.model)
     if checkpoint is not None:
         net.load_state_dict(torch.load(checkpoint)["model"])
 
@@ -419,6 +425,7 @@ def train_pyg(
 
     # train the model!
     if not testing:
+        print(len(train_loader))
         trainer.run(train_loader, max_epochs=config.epochs)
 
     if config.log_tensorboard:

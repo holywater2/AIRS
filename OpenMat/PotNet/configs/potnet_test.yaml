@@ -10,7 +10,7 @@ target: e_form
 
 atom_features: cgcnn
 
-epochs: 500
+epochs: 10
 batch_size: 64
 num_workers: 8
 weight_decay: 0.0
@@ -18,15 +18,18 @@ learning_rate: 1e-3
 
 criterion: mse
 optimizer: adamw
-scheduler: onecycle
+scheduler: none
 
-pin_memory: False
-write_checkpoint: True
+pin_memory: True
+write_checkpoint: False
 write_predictions: True
-store_outputs: True
+store_outputs: False
 progress: True
 log_tensorboard: True
 
+n_train: 500
+n_val: 100
+n_test: 100
 
 normalize: False
 euclidean: False

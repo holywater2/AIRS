@@ -2,11 +2,11 @@ process_dir: processed
 cache_dir: cache
 checkpoint_dir: checkpoint
 
-# dataset: dft_3d
-dataset: megnet
+dataset: dft_3d
+# dataset: megnet
 # JARVIS: formation_energy_peratom, mbj_bandgap, optb88vdw_bandgap, optb88vdw_total_energy, ehull
 # MP: e_form, gap pbe
-target: e_form
+target: formation_energy_peratom
 
 atom_features: cgcnn
 
@@ -27,13 +27,18 @@ store_outputs: True
 progress: True
 log_tensorboard: True
 
+# n_train: 4000
+# n_val: 500
+# n_test: 500
 
 normalize: False
 euclidean: False
 cutoff: 4.0
 max_neighbors: 16
-infinite_funcs: ["zeta", "zeta", "exp"]
-infinite_params: [0.5, 3.0, 3.0]
+# infinite_funcs: ["zeta"]
+# infinite_params: [0.5]
+infinite_funcs: ["zeta"]
+infinite_params: [0.5]
 R: 3
 
 model:
@@ -41,7 +46,9 @@ model:
   conv_layers: 3
   rbf_min: -4.0
   rbf_max: 4.0
-  potentials: [-0.801, -0.074, 0.145]
-#  potentials: [-0.816, -0.052, 0.149]
+  # potentials: [-0.801, -0.074, 0.145]
+  # potentials: [-0.816, -0.052, 0.149]
+  potentials: [-0.816]
+
   charge_map: False
   transformer: False
