@@ -428,15 +428,16 @@ def train_pyg(
         print(len(train_loader))
         trainer.run(train_loader, max_epochs=config.epochs)
 
-    if config.log_tensorboard:
-        test_loss = evaluator.state.metrics["loss"]
-        test_mae = evaluator.state.metrics["mae"]
-        test_neg_mae = evaluator.state.metrics["neg_mae"]
-        # tb_logger.writer.add_hparams(config, {"hparam/test_loss": test_loss})
-        tb_logger.writer.add_scalar("test/loss",test_loss)
-        tb_logger.writer.add_scalar("test/mae",test_mae)
-        tb_logger.writer.add_scalar("test/neg_mae",test_neg_mae)
-        tb_logger.close()
+    # It uses val dataset, not test dataset. 
+    # if config.log_tensorboard:
+    #     test_loss = evaluator.state.metrics["loss"]
+    #     test_mae = evaluator.state.metrics["mae"]
+    #     test_neg_mae = evaluator.state.metrics["neg_mae"]
+    #     # tb_logger.writer.add_hparams(config, {"hparam/test_loss": test_loss})
+    #     tb_logger.writer.add_scalar("test/loss",test_loss)
+    #     tb_logger.writer.add_scalar("test/mae",test_mae)
+    #     tb_logger.writer.add_scalar("test/neg_mae",test_neg_mae)
+    #     tb_logger.close()
 
     print("Testing!")
     net.eval()
@@ -477,11 +478,21 @@ def train_pyg(
 
     from sklearn.metrics import mean_absolute_error
 
+    test_mae = mean_absolute_error(np.array(targets), np.array(predictions))
     print(
-        "Test MAE:",
-        mean_absolute_error(np.array(targets), np.array(predictions)),
+        "Test MAE:",test_mae
     )
-    return mean_absolute_error(np.array(targets), np.array(predictions))
+    
+    if config.log_tensorboard:
+        # test_loss = evaluator.state.metrics["loss"]
+        # test_mae = evaluator.state.metrics["mae"]
+        # test_neg_mae = evaluator.state.metrics["neg_mae"]
+        # tb_logger.writer.add_hparams(config, {"hparam/test_loss": test_loss})
+        # tb_logger.writer.add_scalar("test/loss",test_loss)
+        tb_logger.writer.add_scalar("test/mae",test_mae)
+        # tb_logger.writer.add_scalar("test/neg_mae",test_neg_mae)
+        tb_logger.close()
+    return test_mae
 
 
 def train_prop_model(config: Dict, data_root: str = None, checkpoint: str = None, testing: bool = False, file_format: str = 'poscar'):

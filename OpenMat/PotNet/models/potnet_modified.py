@@ -13,7 +13,7 @@ from torch_geometric.nn.models.schnet import ShiftedSoftplus
 from models.base import BaseSettings
 from models.transformer import TransformerConv
 
-from models.utils import RBFExpansion
+from models.utils import RBFExpansion, Dense, ResidualLayer
 
 class PotNetConfig(BaseSettings):
     name: Literal["potnet"]
@@ -32,6 +32,8 @@ class PotNetConfig(BaseSettings):
     class Config:
         """Configure model settings behavior."""
         env_prefix = "jv_model"
+
+
 
 
 class PotNetConv(MessagePassing):
@@ -56,13 +58,32 @@ class PotNetConv(MessagePassing):
             edge_index, x=x, edge_attr=edge_attr, size=(x.size(0), x.size(0))
         )
 
-        return F.relu(x + self.bn(out))
+        return F.relu(x + self.bn(out)) # Residual part
 
     def message(self, x_i, x_j, edge_attr, index):
         score = torch.sigmoid(self.bn_interaction(self.nonlinear_full(torch.cat((x_i, x_j, edge_attr), dim=1))))
         return score * self.nonlinear(torch.cat((x_i, x_j, edge_attr), dim=1))
 
-class PotNet_no_inf(nn.Module):
+#FIXME
+class EwawldEmbedding(nn.Module):
+    def __init__(self,
+                 emb_size_atom: int,
+                 num_hidden: int) -> None:
+        super().__init__()
+        
+        
+    def get_mlp(self, units_in, units, num_hidden, activation):
+        dense1 = Dense(units_in, units, activation=activation, bias=False)
+        mlp = [dense1]
+        res = [
+            ResidualLayer(units, nLayers=2, activation=activation)
+            for i in range(num_hidden)
+        ]
+        mlp += res
+        return torch.nn.ModuleList(mlp)
+    
+
+class PotNet_Ewald(nn.Module):
 
     def __init__(self, config: PotNetConfig = PotNetConfig(name="potnet")):
         super().__init__()
@@ -76,6 +97,8 @@ class PotNet_no_inf(nn.Module):
                 config.atom_input_features + 10, config.fc_features
             )
 
+        # self.infinite = True
+
         self.edge_embedding = nn.Sequential(
             RBFExpansion(
                 vmin=config.rbf_min,
@@ -86,6 +109,16 @@ class PotNet_no_inf(nn.Module):
             nn.SiLU(),
         )
 
+        self.inf_edge_embedding = RBFExpansion(
+            vmin=config.rbf_min,
+            vmax=config.rbf_max,
+            bins=config.inf_edge_features,
+            type='multiquadric'
+        )
+
+        self.infinite_linear = nn.Linear(config.inf_edge_features, config.fc_features)
+
+        self.infinite_bn = nn.BatchNorm1d(config.fc_features)
 
         self.conv_layers = nn.ModuleList(
             [
@@ -105,12 +138,21 @@ class PotNet_no_inf(nn.Module):
         # fixed edge features: RBF-expanded bondlengths
         edge_index = data.edge_index
         edge_features = self.edge_embedding(-0.75 / data.edge_attr)
-        
+
+        # inf_edge_index = data.inf_edge_index
+        # inf_feat = sum([data.inf_edge_attr[:, i] * pot for i, pot in enumerate(self.config.potentials)])
+        # inf_edge_features = self.inf_edge_embedding(inf_feat)
+        # inf_edge_features = self.infinite_bn(F.softplus(self.infinite_linear(inf_edge_features)))
+
         # initial node features: atom feature network...
         if self.config.charge_map:
             node_features = self.atom_embedding(torch.cat([data.x, data.g_feats], -1))
         else:
             node_features = self.atom_embedding(data.x)
+
+        # if not self.config.transformer:
+        #     edge_index = torch.cat([data.edge_index, inf_edge_index], 1)
+        #     edge_features = torch.cat([edge_features, inf_edge_features], 0)
 
         for i in range(self.config.conv_layers):
                 node_features = self.conv_layers[i](node_features, edge_index, edge_features)
